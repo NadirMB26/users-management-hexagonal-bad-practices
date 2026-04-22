@@ -1,18 +1,22 @@
 package com.jcaa.usersmanagement.domain.valueobject;
 
 import com.jcaa.usersmanagement.domain.exception.InvalidUserIdException;
+import java.util.Objects;
+
+// Clean Code aplicado:
+// - Regla 4: se reemplazó == null por Objects.requireNonNull().
+// - Regla 10: se eliminó texto hardcodeado, reemplazado por constante descriptiva.
+// - Regla 15: inmutabilidad garantizada al ser record.
+// - Regla 12: validación encapsulada en el propio value object.
 
 public record UserId(String value) {
 
+  private static final String NULL_ID_MESSAGE = "UserId cannot be null";
+
   public UserId {
-    // VIOLACIÓN Regla 4: se usa == null en lugar de Objects.requireNonNull() o Objects.isNull().
-    // Para objetos siempre debe usarse Objects.isNull/nonNull, nunca operadores == o !=.
-    if (value == null) {
-      throw new NullPointerException("UserId cannot be null");
-    }
-    final String normalizedValue = value.trim();
+    final String normalizedValue =
+        Objects.requireNonNull(value, NULL_ID_MESSAGE).trim();
     validateNotEmpty(normalizedValue);
-    // asigna el valor normalizado al componente
     value = normalizedValue;
   }
 
@@ -20,10 +24,5 @@ public record UserId(String value) {
     if (normalizedValue.isEmpty()) {
       throw InvalidUserIdException.becauseValueIsEmpty();
     }
-  }
-
-  @Override
-  public String toString() {
-    return value;
   }
 }
