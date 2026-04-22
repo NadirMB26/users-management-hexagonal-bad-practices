@@ -1,14 +1,14 @@
 package com.jcaa.usersmanagement.application.service.dto.query;
 
 import jakarta.validation.constraints.NotBlank;
-// VIOLACIÓN Regla 3: se mezcla @Builder de Lombok con un record.
-// Los records ya tienen constructor canónico; usar @Builder es redundante e innecesario en este caso.
-import lombok.Builder;
 
-@Builder
+// Clean Code - Regla 3 (Lombok y validaciones):
+// 1. Se eliminó @Builder porque los records ya generan un constructor
+//    canónico automáticamente. Usarlo es redundante e innecesario.
+// 2. Se eliminó el atributo message= de @NotBlank. La guía indica no
+//    personalizar mensajes en las constraints; se deben usar los mensajes
+//    por defecto de Jakarta Validation para mantener consistencia.
 public record GetUserByIdQuery(
-    // VIOLACIÓN Regla 3: se usa mensaje personalizado en la constraint.
-    // La regla indica dejar los mensajes por default — no usar atributo message=.
-    @NotBlank(message = "id must not be blank") String id) {
+    @NotBlank String id) {
 
 }
