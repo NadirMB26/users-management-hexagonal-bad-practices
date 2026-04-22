@@ -6,22 +6,31 @@ import com.jcaa.usersmanagement.domain.valueobject.UserEmail;
 import com.jcaa.usersmanagement.domain.valueobject.UserId;
 import com.jcaa.usersmanagement.domain.valueobject.UserName;
 import com.jcaa.usersmanagement.domain.valueobject.UserPassword;
-// VIOLACIÓN Regla 9 (Hexagonal): el dominio importa una clase de infraestructura.
-// Las dependencias siempre deben ir hacia el centro — nunca desde el dominio hacia afuera.
-import com.jcaa.usersmanagement.infrastructure.adapter.persistence.entity.UserEntity;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Value;
 
-// Clean Code - Regla 15 (inmutabilidad como preferencia de diseño):
-// Se cambió @Value por @Data + @AllArgsConstructor, lo que expone setters públicos
-// para todos los campos. Un modelo de dominio debe ser inmutable: los setters permiten
-// que cualquier clase modifique el estado del objeto sin pasar por invariantes ni
-// reglas de negocio.
-// Con @Value todos los campos serían final y no habría setters.
-// Con @Data + @AllArgsConstructor cualquiera puede hacer userModel.setStatus(BLOCKED)
-// desde fuera del dominio, rompiendo el encapsulamiento.
-@Data
-@AllArgsConstructor
+// Guía Hexagonal - Regla 9 (dependencias hacia el centro):
+// Se eliminó la importación de UserEntity (infraestructura) en el dominio.
+// El dominio no debe conocer cómo se persisten sus datos.
+// La conversión a entidad debe hacerse en un mapper de la capa adapter.
+//
+// Clean Code - Regla 15 (inmutabilidad):
+// Se reemplazó @Data + @AllArgsConstructor por @Value.
+// Con @Value todos los campos son final e inmutables, sin setters públicos.
+// Esto protege las invariantes del dominio y evita modificaciones externas.
+//
+// Clean Code - Regla 14 (Ley de Deméter):
+// Se encapsuló la verificación de contraseña en passwordMatches(),
+// evitando navegar a internals (user.getPassword().verifyPlain()).
+//
+// Clean Code - Regla 12 (alta cohesión):
+// Se agregó isAllowedToLogin() y isAdmin() para centralizar la lógica de estados válidos
+// y roles dentro del modelo de dominio, en lugar de dispersarla en la capa de aplicación.
+//
+// Clean Code - Regla 17 (condiciones limpias):
+// La condición redundante sobre múltiples estados se reemplazó por métodos
+// expresivos isAllowedToLogin() e isAdmin().
+
+@Value
 public class UserModel {
 
   UserId id;
@@ -48,17 +57,18 @@ public class UserModel {
     return new UserModel(id, name, email, password, role, UserStatus.INACTIVE);
   }
 
-  // VIOLACIÓN Regla 9 (Hexagonal): método de conversión a entidad de infraestructura dentro del dominio.
-  // El dominio NO debe saber nada sobre cómo se persisten sus datos.
-  public UserEntity toEntity() {
-    return new UserEntity(
-        id.value(),
-        name.value(),
-        email.value(),
-        password.value(),
-        role.name(),
-        status.name(),
-        null,
-        null);
+  // Encapsula la verificación de contraseña
+  public boolean passwordMatches(final String plainPassword) {
+    return this.password.verifyPlain(plainPassword);
+  }
+
+  // Encapsula la lógica de estados válidos para login
+  public boolean isAllowedToLogin() {
+    return this.status == UserStatus.ACTIVE;
+  }
+
+  // Encapsula la lógica de rol administrador
+  public boolean isAdmin() {
+    return this.role == UserRole.ADMIN;
   }
 }
