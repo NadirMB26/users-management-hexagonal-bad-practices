@@ -1,13 +1,26 @@
 package com.jcaa.usersmanagement.domain.exception;
 
+// Clean Code - Regla 9 (constructores controlados):
+//   Se mantiene constructor privado para forzar el uso de factory methods.
+//   Esto asegura que la excepción solo se cree con mensajes predefinidos.
+//
+// Clean Code - Regla 10 (evitar texto hardcodeado):
+//   El mensaje de error se movió a una constante privada con nombre descriptivo.
+//   Esto evita duplicación y facilita mantenimiento.
+
 public final class InvalidUserStatusException extends DomainException {
 
+  // Constante de mensaje de error
+  private static final String INVALID_STATUS_MESSAGE =
+      "The user status '%s' is not valid.";
+
+  // Constructor privado para forzar uso de factory methods
   private InvalidUserStatusException(final String message) {
     super(message);
   }
 
+  // Factory method expresivo
   public static InvalidUserStatusException becauseValueIsInvalid(final String status) {
-    // VIOLACIÓN Regla 10: texto hardcodeado directamente — debe ser una constante.
-    return new InvalidUserStatusException(String.format("The user status '%s' is not valid.", status));
+    return new InvalidUserStatusException(String.format(INVALID_STATUS_MESSAGE, status));
   }
 }
