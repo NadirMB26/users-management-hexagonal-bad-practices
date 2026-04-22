@@ -1,11 +1,23 @@
 package com.jcaa.usersmanagement.infrastructure.adapter.persistence.config;
 
-public record DatabaseConfig(
-    String host, int port, String databaseName, String username, String password) {
-  private static final String URL_TEMPLATE =
-      "jdbc:mysql://%s:%d/%s?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
+public final class DatabaseConfig {
+  private final String host;
+  private final int port;
+  private final String name;
+  private final String username;
+  private final String password;
 
-  public String buildJdbcUrl() {
-    return String.format(URL_TEMPLATE, host, port, databaseName);
+  public DatabaseConfig(String host, int port, String name, String username, String password) {
+    this.host = host;
+    this.port = port;
+    this.name = name;
+    this.username = username;
+    this.password = password;
   }
+
+  public String host() { return host; }
+  public int port() { return port; }
+  public String name() { return name; }   
+  public String username() { return username; }
+  public String password() { return password; }
 }

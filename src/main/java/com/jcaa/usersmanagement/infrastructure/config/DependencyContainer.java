@@ -1,3 +1,11 @@
+// VIOLACIONES DETECTADAS:
+// - Regla 19: Acoplamiento temporal. Se requiere llamar a init() en UserRepositoryMySQL antes de usarlo,
+//   lo que establece un orden implícito frágil que el diseño no encapsula.
+// - Regla 22: El código debe ser fácil de borrar/refactorizar. DependencyContainer depende de la clase
+//   concreta UserRepositoryMySQL para poder invocar init(), lo que rompe la intercambiabilidad de implementaciones.
+// - Regla 4: DatabaseConnectionFactory debería ser @UtilityClass. Al no estarlo, se instancia directamente
+//   en lugar de usarse como clase utilitaria estática.
+
 package com.jcaa.usersmanagement.infrastructure.config;
 
 import com.jcaa.usersmanagement.application.port.in.CreateUserUseCase;
@@ -16,7 +24,7 @@ import com.jcaa.usersmanagement.application.service.UpdateUserService;
 import com.jcaa.usersmanagement.infrastructure.adapter.email.JavaMailEmailSenderAdapter;
 import com.jcaa.usersmanagement.infrastructure.adapter.email.SmtpConfig;
 import com.jcaa.usersmanagement.infrastructure.adapter.persistence.config.DatabaseConfig;
-import com.jcaa.usersmanagement.infrastructure.adapter.persistence.config.DatabaseConnectionFactory;
+import com.jcaa.usersmanagement.infrastructure.adapter.persistence.config.DatabaseConnectionConfig;
 import com.jcaa.usersmanagement.infrastructure.adapter.persistence.repository.UserRepositoryMySQL;
 import com.jcaa.usersmanagement.infrastructure.entrypoint.desktop.controller.UserController;
 
@@ -46,30 +54,17 @@ public final class DependencyContainer {
     final Connection connection = buildDatabaseConnection(properties);
     final UserRepositoryMySQL userRepository = new UserRepositoryMySQL(connection);
 
-    // Clean Code - Regla 22 (el código debe ser fácil de borrar y refactorizar):
-    // Para llamar a init() es obligatorio tener la referencia como tipo concreto
-    // UserRepositoryMySQL — ninguna de las interfaces que implementa (SaveUserPort,
-    // GetUserByIdPort, etc.) expone init().
-    // Esto crea un acoplamiento rígido e inesperado:
-    //   1. Si se quiere reemplazar UserRepositoryMySQL por otra implementación,
-    //      hay que tocar también DependencyContainer y asegurarse de que la nueva
-    //      clase también tenga init(), o rediseñar el flujo aquí.
-    //   2. Si se quiere borrar init(), hay que rastrear todos los lugares que lo llaman.
-    //   La estructura del código no permite intercambiar o borrar partes sin
-    //   ajustar múltiples puntos de acoplamiento.
-    // Clean Code - Regla 19 (temporal coupling): además, este patrón init() → uso
-    // establece un orden implícito frágil que el diseño no encapsula ni protege.
+    // VIOLACIÓN Regla 19 y 22: init() crea acoplamiento temporal y dependencia rígida.
     userRepository.init();
 
     final JavaMailEmailSenderAdapter emailSender =
         new JavaMailEmailSenderAdapter(buildSmtpConfig(properties));
     final EmailNotificationService emailNotification = new EmailNotificationService(emailSender);
 
-    // Construir Validator para las validaciones en la capa de aplicación
     final Validator validator = ValidatorProvider.buildValidator();
 
     final CreateUserUseCase createUserUseCase =
-        new CreateUserService(userRepository, userRepository, emailNotification, validator);
+        new CreateUserService(userRepository, userRepository, emailNotification, null, validator);
     final UpdateUserUseCase updateUserUseCase =
         new UpdateUserService(userRepository, userRepository, userRepository, emailNotification, validator);
     final DeleteUserUseCase deleteUserUseCase =
@@ -92,18 +87,20 @@ public final class DependencyContainer {
     return userController;
   }
 
-  private static Connection buildDatabaseConnection(final AppProperties properties) {
-    final DatabaseConfig config =
-        new DatabaseConfig(
-            properties.get(DB_HOST),
-            properties.getInt(DB_PORT),
-            properties.get(DB_NAME),
-            properties.get(DB_USER),
-            properties.get(DB_PASSWORD));
-    // VIOLACIÓN Regla 4 (consecuencia): DatabaseConnectionFactory ya no tiene @UtilityClass,
-    // por lo que debe instanciarse para llamar a createConnection.
-    return new DatabaseConnectionFactory().createConnection(config);
-  }
+private static Connection buildDatabaseConnection(final AppProperties properties) {
+  final DatabaseConfig config =
+      new DatabaseConfig(
+          properties.get(DB_HOST),
+          properties.getInt(DB_PORT),
+          properties.get(DB_NAME),
+          properties.get(DB_USER),
+          properties.get(DB_PASSWORD));
+
+  // CORREGIDO Regla 4: se usa directamente el método estático sin instanciar la clase
+  return DatabaseConnectionConfig.getConnection(
+      config.host(), config.port(), config.name(), config.username(), config.password());
+}
+
 
   private static SmtpConfig buildSmtpConfig(final AppProperties properties) {
     return new SmtpConfig(

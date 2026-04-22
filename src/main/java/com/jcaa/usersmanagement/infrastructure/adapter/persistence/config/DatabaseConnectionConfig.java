@@ -1,6 +1,5 @@
 // VIOLACIONES DETECTADAS:
 // - Regla 4: Clase con solo métodos estáticos que NO estaba anotada con @UtilityClass.
-//   Sin @UtilityClass, Lombok no genera el constructor privado y la clase puede instanciarse.
 //   Se corrigió agregando la anotación @UtilityClass para cumplir con Clean Code.
 
 package com.jcaa.usersmanagement.infrastructure.adapter.persistence.config;
@@ -15,13 +14,18 @@ import java.sql.SQLException;
 @UtilityClass
 public class DatabaseConnectionConfig {
 
-  public static Connection getConnection(final String url, final String user, final String password) {
+  public static Connection getConnection(
+      final String host,
+      final int port,
+      final String name,
+      final String user,
+      final String password) {
     try {
+      String url = String.format("jdbc:mysql://%s:%d/%s", host, port, name);
       return DriverManager.getConnection(url, user, password);
     } catch (final SQLException exception) {
-      // CORREGIDO Regla 4: ahora la clase está anotada con @UtilityClass,
-      // lo que evita que pueda instanciarse y asegura que solo se use de forma estática.
       throw PersistenceException.becauseDatabaseConnectionFailed(exception);
     }
   }
+  
 }
