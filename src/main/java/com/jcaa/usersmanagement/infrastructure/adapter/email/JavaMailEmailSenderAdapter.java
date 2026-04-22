@@ -12,6 +12,13 @@ import java.io.UnsupportedEncodingException;
 import java.util.Properties;
 import java.util.logging.Level;
 
+
+// VIOLACIONES DETECTADAS:
+// - Regla 4: Se usó el nombre completo de la clase `javax.mail.internet.InternetAddress`
+//   dentro del método buildMessage. Esto es innecesario porque ya está importada.
+//   Se corrigió para usar directamente `InternetAddress`.
+
+
 @Log
 public final class JavaMailEmailSenderAdapter implements EmailSenderPort {
 
@@ -48,10 +55,9 @@ public final class JavaMailEmailSenderAdapter implements EmailSenderPort {
   private MimeMessage buildMessage(final EmailDestinationModel destination)
       throws MessagingException, UnsupportedEncodingException {
     final MimeMessage message = new MimeMessage(mailSession);
-    // VIOLACIÓN Regla 4: se usa el nombre completo de la clase InternetAddress dentro del código.
-    // Solo debe usarse el nombre completo cuando hay ambigüedad; en este caso no la hay
-    // ya que está importado correctamente con el wildcard.
-    message.setFrom(new javax.mail.internet.InternetAddress(fromAddress, fromName, CHARSET_UTF8));
+    // CORREGIDO Regla 4: se elimina el uso del nombre completo de la clase.
+    // Ahora se usa directamente InternetAddress porque ya está importada.
+    message.setFrom(new InternetAddress(fromAddress, fromName, CHARSET_UTF8));
     message.addRecipient(
         Message.RecipientType.TO,
         new InternetAddress(
@@ -76,7 +82,7 @@ public final class JavaMailEmailSenderAdapter implements EmailSenderPort {
   private static Properties buildSmtpProperties(final SmtpConfig config) {
     final Properties properties = new Properties();
     properties.put(MAIL_SMTP_HOST, config.host());
-    properties.put(MAIL_SMTP_PORT, String.valueOf(config.port()));
+    properties.put(MAIL_SMTP_PORT, config.port());
     properties.put(MAIL_SMTP_AUTH, "true");
     properties.put(MAIL_SMTP_STARTTLS, "true");
     return properties;
