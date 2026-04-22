@@ -9,25 +9,26 @@ import com.jcaa.usersmanagement.domain.model.UserModel;
 import com.jcaa.usersmanagement.domain.valueobject.UserId;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
-import jakarta.validation.Valid;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Set;
 
+// Guía Hexagonal - Regla 3 (Lombok y validaciones):
+// @Valid estaba declarado en el método @Override de la implementación.
+// La guía indica que las constraints de validación (@Valid, @NotNull, etc.)
+// solo deben declararse en las interfaces (puertos de entrada), nunca en
+// las clases concretas que las implementan. Se eliminó @Valid de aquí;
+// debe estar en GetUserByIdUseCase.
 @RequiredArgsConstructor
 public final class GetUserByIdService implements GetUserByIdUseCase {
 
   private final GetUserByIdPort getUserByIdPort;
   private final Validator validator;
 
-  // VIOLACIÓN Regla 3: @Valid declarado en la implementación (@Override).
-  // Las constraints (@Valid, @NotNull, etc.) solo deben declararse en las interfaces (puertos),
-  // nunca en las clases concretas que las implementan.
   @Override
-  public UserModel execute(@Valid final GetUserByIdQuery query) {
+  public UserModel execute(final GetUserByIdQuery query) {
     validateQuery(query);
-
     final UserId userId = UserApplicationMapper.fromGetUserByIdQueryToUserId(query);
     return getUserByIdPort
         .getById(userId)
