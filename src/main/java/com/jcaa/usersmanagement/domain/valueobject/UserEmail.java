@@ -2,29 +2,26 @@ package com.jcaa.usersmanagement.domain.valueobject;
 
 import com.jcaa.usersmanagement.domain.exception.InvalidUserEmailException;
 import java.util.Objects;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
-public record UserEmail(String value) {
+// Clean Code aplicado:
+// - Regla 6: se eliminó el Logger, el dominio no debe tener logs ni exponer PII.
+// - Regla 10: se reemplazaron textos hardcodeados por constantes descriptivas.
+// - Regla 23: se centralizó la validación de email en este value object, evitando conocimiento disperso.
 
-  // VIOLACIÓN Regla 6: logging en capa de dominio (el dominio no debe tener logs)
-  private static final Logger LOGGER = Logger.getLogger(UserEmail.class.getName());
+public record UserEmail(String value) {
 
   private static final Pattern EMAIL_PATTERN =
       Pattern.compile("^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$");
 
+  private static final String EMPTY_EMAIL_MESSAGE =
+      "The user email must not be empty.";
+  private static final String INVALID_FORMAT_MESSAGE =
+      "The user email format is invalid: '%s'.";
+
   public UserEmail {
     final String normalizedValue =
-        Objects.requireNonNull(value, "UserEmail cannot be null").trim().toLowerCase();
-    // VIOLACIÓN Regla 6: se loguea un dato PII (el email del usuario) en capa de dominio
-    LOGGER.warning("Validando email del usuario: " + normalizedValue);
-    // Clean Code - Regla 23 (minimizar conocimiento disperso):
-    // La lógica de "qué es un email válido" está fragmentada en tres lugares:
-    //   1. Aquí: validación de formato con regex (EMAIL_PATTERN)
-    //   2. UserValidationUtils.isValidEmail(): validación simplificada con contains("@")
-    //   3. Posiblemente en constraints @Email de los commands (CreateUserCommand)
-    // Un cambio en las reglas de validación de email debe buscarse y sincronizarse
-    // en múltiples clases — eso es conocimiento disperso.
+        Objects.requireNonNull(value, EMPTY_EMAIL_MESSAGE).trim().toLowerCase();
     validateNotEmpty(normalizedValue);
     validateFormat(normalizedValue);
     value = normalizedValue;
